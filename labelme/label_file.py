@@ -3,8 +3,11 @@ import contextlib
 import io
 import json
 import os.path as osp
+import cv2
+import numpy as np
 
 import PIL.Image
+import imgviz
 
 from labelme import __version__
 from labelme.logger import logger
@@ -203,6 +206,51 @@ class LabelFile(object):
         except Exception as e:
             raise LabelFileError(e)
 
+        #read the data dictionary from here
+        print("start here")
+        img = utils.img_b64_to_arr(imageData)
+
+        label_name_to_value = {'_background_': 0}
+        for shape in sorted(data['shapes'], key=lambda x: x['label']):
+            label_name = shape['label']
+            if label_name in label_name_to_value:
+                label_value = label_name_to_value[label_name]
+            else:
+                label_value = len(label_name_to_value)
+                label_name_to_value[label_name] = label_value
+        lbl, _ = utils.shapes_to_label(
+            img.shape, data['shapes'], label_name_to_value
+        )
+
+        label_names = [None] * (max(label_name_to_value.values()) + 1)
+        for name, value in label_name_to_value.items():
+            label_names[value] = name
+
+        lbl_viz = imgviz.label2rgb(
+            label=lbl, img=imgviz.asgray(img), label_names=label_names, loc='rb'
+        )
+        print('Image path : ', filename)
+        out_base = osp.basename(filename).replace('.', '_')  # Return file name
+        PIL.Image.fromarray(img).save(out_base + '_img.png')
+        utils.lblsave(out_base + '_label.png', lbl)
+        PIL.Image.fromarray(lbl_viz).save(out_base + '_label_viz.png')
+        with open(out_base + '_label_names.txt', 'w') as f:
+            for lbl_name in label_names:
+                f.write(lbl_name + '\n')
+
+        # TO Create LANE MASK {0, 1}
+        masked_lane_path = out_base + '_label.png'
+        masked_lane = cv2.imread(masked_lane_path)
+        masked_lane_gray = cv2.imread(masked_lane_path, 0)
+        print(np.unique(masked_lane))
+        print(np.unique(masked_lane_gray))
+        masked_lane[np.where(masked_lane_gray == 38)] = 1
+        print(np.unique(masked_lane))
+        masked_lane_resized = cv2.resize(masked_lane, (640, 360))
+        cv2.imwrite(out_base + '_mask.png', masked_lane_resized)
+
+
     @staticmethod
     def is_label_file(filename):
         return osp.splitext(filename)[1].lower() == LabelFile.suffix
+
