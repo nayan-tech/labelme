@@ -5,6 +5,7 @@ import json
 import os.path as osp
 import cv2
 import numpy as np
+import pathlib
 
 import PIL.Image
 import imgviz
@@ -230,7 +231,9 @@ class LabelFile(object):
             label=lbl, img=imgviz.asgray(img), label_names=label_names, loc='rb'
         )
         print('Image path : ', filename)
-        out_base = osp.basename(filename).replace('.', '_')  # Return file name
+        im_path = pathlib.Path(filename).parent.absolute()
+        print("Path : ",str(im_path))
+        out_base = str(im_path) + '/' + osp.basename(filename).replace('.', '_')  # Return file name
         PIL.Image.fromarray(img).save(out_base + '_img.png')
         utils.lblsave(out_base + '_label.png', lbl)
         PIL.Image.fromarray(lbl_viz).save(out_base + '_label_viz.png')
