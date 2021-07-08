@@ -11,11 +11,12 @@ RUN \
     python3-pip \
     python3-matplotlib \
     python3-pyqt5 \
+    python3-opencv\
     && rm -rf /var/lib/apt/lists/*
 
 RUN python3 -m pip install -U pip setuptools wheel
 
-RUN python3 -m pip install -v git+https://github.com/wkentaro/labelme.git
+RUN python3 -m pip install -v git+https://github.com/nayan-tech/labelme.git
 
 RUN mkdir /root/workdir
 
